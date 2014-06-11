@@ -24,10 +24,10 @@ function Techies(settings)
 Techies.prototype.discover = function()
 {
     // Grab all of the elements with the Techies validation attribute
-    var elements = document.querySelectorAll('[' + this.attributeName + ']');
+    var elements = __tchs__objToArray(document.querySelectorAll('[' + this.attributeName + ']'));
 
     // Loop through the elements to filter out those with invalid validation attribute values
-    for (int i = 0; i < elements.length; ++i)
+    for (var i = 0; i < elements.length; ++i)
     {
         // Grab the value of the Techies validation attribute on the current element
         var value = elements[i].getAttribute(this.attributeName);
@@ -39,8 +39,8 @@ Techies.prototype.discover = function()
              * and skip to the next loop iteration if
              * the element's value does not exist.
              */
+            __tchs__log('Element with HTML \'' + elements[i].outerHTML + '\' was found to have an empty or invalid \'tchs\' attribute and will be ignored for validation.', 'WARNING');
             elements.splice(i, 1);
-            __tchs__log('Element with tag name \'' + element.tagName  + '\' and id \'' + elements[i].id '\' was found to have an empty or invalid \'tchs\' attribute and will be ignored for validation.', 'ERROR');
             continue;
         }
 
@@ -280,4 +280,12 @@ function __tchs__log(message, type)
     {
         console.log('::TECHIES:: ' + type + ': ' + message);
     }
+}
+
+// Convert an object into an Array object
+function __tchs__objToArray(obj)
+{
+    return [].map.call(obj, function(element) {
+        return element;
+    })
 }
