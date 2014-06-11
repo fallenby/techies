@@ -1,10 +1,24 @@
 /*
+ *  Techies
+ *
+ *  Validation library written in Javascript
+ *
+ *  Currently supported form elements:
+ *      <input type="text">
+ *
+ *  TODO: Complete Techies.discover()
+ *  TODO: Everything
+ */
+
+/*
  *  Techies object
  */
 
 function Techies(settings)
 {
    this.attributeName = 'tchs'; 
+
+   this.discover();
 }
 
 Techies.prototype.discover = function()
@@ -12,7 +26,28 @@ Techies.prototype.discover = function()
     // Grab all of the elements with the Techies validation attribute
     var elements = document.querySelectorAll('[' + this.attributeName + ']');
 
+    // Loop through the elements to filter out those with invalid validation attribute values
+    for (int i = 0; i < elements.length; ++i)
+    {
+        // Grab the value of the Techies validation attribute on the current element
+        var value = elements[i].getAttribute(this.attributeName);
+        
+        if (value == null || value === '')
+        {
+            /*
+             * Remove current element from the array
+             * and skip to the next loop iteration if
+             * the element's value does not exist.
+             */
+            elements.splice(i, 1);
+            __tchs__log('Element with tag name \'' + element.tagName  + '\' and id \'' + elements[i].id '\' was found to have an empty or invalid \'tchs\' attribute and will be ignored for validation.', 'ERROR');
+            continue;
+        }
 
+        // TODO: All the things
+
+
+    }
 };
 
 /*
@@ -43,6 +78,20 @@ function TechiesElementInput(settings)
 
 TechiesElementInput.prototype = Object.create(TechiesElement.prototype);
 TechiesElementInput.prototype.constructor = TechiesElementInput;
+
+/*
+ *  TechiesElementInputText object
+ *
+ *  Represents an HTML <input type="text"> element.
+ */
+
+function TechiesElementInputText(settings)
+{
+    TechiesElementInput.call(this);
+}
+
+TechiesElementInputText.prototype = Object.create(TechiesElementInput.prototype);
+TechiesElementInputText.prototype.constructor = TechiesElementInputText;
 
 TechiesElementInput.prototype.getValue = function()
 {
@@ -142,6 +191,7 @@ function TechiesOperatorNegate(settings)
     TechiesOperatorUnary.call(this);
 
     this.name = 'operator_unary_negate';
+    this.symbol = '!';
 }
 
 TechiesOperatorNegate.prototype = Object.create(TechiesOperatorUnary.prototype);
@@ -188,7 +238,7 @@ function TechiesOperatorAnd(settings)
     TechiesOperatorBinary.call(this);
 
     this.name = 'operator_binary_and';
-    this.symbol = ',';
+    this.symbol = ';';
 }
 
 TechiesOperatorAnd.prototype = Object.create(TechiesOperatorBinary.prototype);
@@ -208,7 +258,7 @@ function TechiesOperatorOr(settings)
     TechiesOperatorBinary.call(this);
 
     this.name = 'operator_binary_or';
-    this.symbol = '.';
+    this.symbol = ':';
 }
 
 TechiesOperatorOr.prototype = Object.create(TechiesOperatorBinary.prototype);
@@ -218,3 +268,16 @@ TechiesOperatorOr.prototype.evaluate = function()
 {
     return (this.operandLeft.evaluate() || this.operandRight.evaluate());
 };
+
+/*
+ * Techies misc helper functions
+ */
+
+// Log a message to the browser console if supported
+function __tchs__log(message, type)
+{
+    if (window.console && window.console.log)
+    {
+        console.log('::TECHIES:: ' + type + ': ' + message);
+    }
+}
