@@ -38,13 +38,6 @@ Rules are used by Techies to determine how to validate an element. Rules can be 
 
             Allows only numeric inputs in the range of 1 to 3.
 
-    inc
-        Inclusion validation. This Rule allows only the inputs explicitly specified.
-
-            e.g. <input type="text" tchs="inc['a','b',1,2]"></input>
-
-            Allows only the inputs of the characters 'a' or 'b', and the numbers 1 or 2.
-
     exc
         Exclusion validation. This Rule allows all inputs other than those specified.
 
