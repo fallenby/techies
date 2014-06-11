@@ -22,8 +22,6 @@ Rules
 
 Rules are used by Techies to determine how to validate an element. Rules can be either built-in rules or custom rules, with custom rules being self-written functions.
 
-The following built-in Rules exist in Techies:
-
     num
         Numeric validation. This Rule allows only numeric key inputs.
 
@@ -94,18 +92,18 @@ Operators
 
 Operators are used with rules to specify how validation is to take place.
 
-    Unary operators
+Unary operators
 
-        A single operand to the right of the operator
+    A single operand to the right of the operator
 
         !   -   NEGATION
             Negates its operand
                 true    ->  false
                 false   ->  true
 
-    Binary operators
+Binary operators
 
-        Two operands to the right and left of the operator
+    Two operands to the right and left of the operator
 
         ,   -   AND
             Both operands must validate successfully
