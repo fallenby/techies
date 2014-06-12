@@ -2,6 +2,9 @@
 techies
 =======
 
+####NOTICE:
+####This library is extremely young and definitely not production-ready. It is still undergoing heavy development.
+
 Javascript validation library.
 
 Why? Because I wrote some pretty shitty validation code and would like to make something more robust while learning about it at the same time.
