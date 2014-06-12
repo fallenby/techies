@@ -5,9 +5,6 @@
  *
  *  Currently supported form elements:
  *      <input type="text">
- *
- *  TODO: Complete Techies.discover()
- *  TODO: Everything
  */
 
 /*
@@ -16,9 +13,10 @@
 
 function Techies(settings)
 {
-   this.attributeName = 'tchs'; 
+    this.attributeName = 'tchs';
+    this.expressions = []; // Array of TechiesExpression
 
-   this.discover();
+    this.discover();
 }
 
 Techies.prototype.discover = function()
@@ -31,7 +29,7 @@ Techies.prototype.discover = function()
     {
         // Grab the value of the Techies validation attribute on the current element
         var value = elements[i].getAttribute(this.attributeName);
-        
+
         if (value == null || value === '')
         {
             /*
@@ -39,16 +37,25 @@ Techies.prototype.discover = function()
              * and skip to the next loop iteration if
              * the element's value does not exist.
              */
-            __tchs__log('Element with HTML \'' + elements[i].outerHTML + '\' was found to have an empty or invalid \'tchs\' attribute and will be ignored for validation.', 'WARNING');
+            __tchs__log('Element with HTML \'' + elements[i].outerHTML + '\' was found to have an empty or invalid \'' + this.attributeName + '\' attribute and will be ignored for validation.', 'WARNING');
             elements.splice(i, 1);
             continue;
         }
 
-        // TODO: All the things
-
-
+        this.expressions.push(new TechiesExpression({'element': new TechiesElement({'formElement': elements[i]})}));
     }
 };
+
+/*
+ *  TechiesExpression object
+ */
+
+function TechiesExpression(settings)
+{
+    this.element = settings['element']; // TechiesElement
+    this.rule = __tchs__parseExpression(this.element.getExpressionValue(), this.element); // TechiesObject
+    alert(this.rule.evaluate());
+}
 
 /*
  *  TechiesElement object
@@ -58,12 +65,34 @@ Techies.prototype.discover = function()
 
 function TechiesElement(settings)
 {
-    this.formElement = null; // HTML Element 
+    if (!settings)
+        return;
+
+    this.formElement = settings['formElement']; // HTML Element
+
+    if (this.formElement.tagName == 'INPUT')
+    {
+        if (this.formElement.getAttribute('type') == 'text')
+        {
+            var elem = new TechiesElementInputText();
+            elem.formElement = this.formElement;
+            return elem;
+        }
+    }
 }
 
+// Returns the element's value, which is to be validated
 TechiesElement.prototype.getValue = function() // String
 {
+    // Default implementation returns null for debugging purposes
+    return null;
 };
+
+// Returns the value of the 'tchs' attribute on this object's formElement
+TechiesElement.prototype.getExpressionValue = function()
+{
+    return this.formElement.getAttribute('tchs');
+}
 
 /*
  *  TechiesElementInput object
@@ -73,7 +102,7 @@ TechiesElement.prototype.getValue = function() // String
 
 function TechiesElementInput(settings)
 {
-    TechiesElement.call(this);
+    TechiesElement.call(this, settings);
 }
 
 TechiesElementInput.prototype = Object.create(TechiesElement.prototype);
@@ -87,7 +116,7 @@ TechiesElementInput.prototype.constructor = TechiesElementInput;
 
 function TechiesElementInputText(settings)
 {
-    TechiesElementInput.call(this);
+    TechiesElementInput.call(this, settings);
 }
 
 TechiesElementInputText.prototype = Object.create(TechiesElementInput.prototype);
@@ -109,6 +138,7 @@ TechiesElementInput.prototype.getValue = function()
 function TechiesObject(settings)
 {
     this.name = 'base_object';
+    this.element = settings['element']; // TechiesElement
 }
 
 /*
@@ -119,7 +149,8 @@ function TechiesObject(settings)
  */
 TechiesObject.prototype.evaluate = function() // bool
 {
-    
+    // Return null for debugging purposes
+    return null;
 };
 
 /*
@@ -128,10 +159,9 @@ TechiesObject.prototype.evaluate = function() // bool
 
 function TechiesRule(settings)
 {
-    this.name = 'base_rule';
+    TechiesObject.call(this, settings);
 
-    this.element = null; // TechiesElement
-    this.children = null; // Array of TechiesObject
+    this.name = 'base_rule';
 }
 
 TechiesRule.prototype = Object.create(TechiesObject.prototype);
@@ -143,7 +173,7 @@ TechiesRule.prototype.constructor = TechiesRule;
 
 function TechiesRuleNumeric(settings)
 {
-    TechiesRule.call(this);
+    TechiesRule.call(this, settings);
 
     this.name = 'num';
 }
@@ -151,13 +181,24 @@ function TechiesRuleNumeric(settings)
 TechiesRuleNumeric.prototype = Object.create(TechiesRule.prototype);
 TechiesRuleNumeric.prototype.constructor = TechiesRuleNumeric;
 
+TechiesRuleNumeric.prototype.evaluate = function()
+{
+    var value = this.element.getValue();
+    for (var i = 0; i < value.length; ++i)
+    {
+        if (isNaN(parseInt(value.charAt(i))))
+            return false;
+    }
+    return true;
+}
+
 /*
  *  TechiesOperator object
  */
 
 function TechiesOperator(settings)
 {
-    TechiesObject.call(this);
+    TechiesObject.call(this, settings);
 
     this.name = 'base_operator';
     this.symbol = '';
@@ -172,7 +213,12 @@ TechiesOperator.prototype.constructor = TechiesOperator;
 
 function TechiesOperatorUnary(settings)
 {
-    TechiesOperator.call(this);
+    TechiesOperator.call(this, settings);
+
+    if (settings['operand'])
+    {
+        this.setOperand(settings['operand']);
+    }
 
     this.name = 'base_operator_unary';
 
@@ -182,13 +228,18 @@ function TechiesOperatorUnary(settings)
 TechiesOperatorUnary.prototype = Object.create(TechiesOperator.prototype);
 TechiesOperatorUnary.prototype.constructor = TechiesOperatorUnary;
 
+TechiesOperatorUnary.prototype.setOperand = function(operand /* String */)
+{
+    this.operand = __tchs__parseExpression(operand, this.element);
+}
+
 /*
  *  TechiesOperatorNegate object
  */
 
 function TechiesOperatorNegate(settings)
 {
-    TechiesOperatorUnary.call(this);
+    TechiesOperatorUnary.call(this, settings);
 
     this.name = 'operator_unary_negate';
     this.symbol = '!';
@@ -208,25 +259,28 @@ TechiesOperatorNegate.prototype.evaluate = function()
 
 function TechiesOperatorBinary(settings)
 {
-    TechiesOperator.call(this);
+    TechiesOperator.call(this, settings);
+
+    if (settings['operandLeft'] && settings['operandRight'])
+    {
+        this.setOperandLeft(settings['operandLeft']);
+        this.setOperandRight(settings['operandRight']);
+    }
 
     this.name = 'base_operator_binary';
-    
-    this.operandLeft = null; // TechiesObject
-    this.operandRight = null; // TechiesObject
 }
 
 TechiesOperatorBinary.prototype = Object.create(TechiesOperator.prototype);
 TechiesOperatorBinary.prototype.constructor = TechiesOperatorBinary;
 
-TechiesOperatorBinary.prototype.setOperandLeft = function(operand /* TechiesObject */)
+TechiesOperatorBinary.prototype.setOperandLeft = function(operand /* String */)
 {
-    this.operandLeft = operand;
+    this.operandLeft = __tchs__parseExpression(operand, this.element);
 };
 
-TechiesOperatorBinary.prototype.setOperandRight = function(operand /* TechiesObject */)
+TechiesOperatorBinary.prototype.setOperandRight = function(operand /* String */)
 {
-    this.operandRight = operand;
+    this.operandRight = __tchs__parseExpression(operand, this.element);
 };
 
 /*
@@ -235,7 +289,7 @@ TechiesOperatorBinary.prototype.setOperandRight = function(operand /* TechiesObj
 
 function TechiesOperatorAnd(settings)
 {
-    TechiesOperatorBinary.call(this);
+    TechiesOperatorBinary.call(this, settings);
 
     this.name = 'operator_binary_and';
     this.symbol = ';';
@@ -255,7 +309,7 @@ TechiesOperatorAnd.prototype.evaluate = function()
 
 function TechiesOperatorOr(settings)
 {
-    TechiesOperatorBinary.call(this);
+    TechiesOperatorBinary.call(this, settings);
 
     this.name = 'operator_binary_or';
     this.symbol = ':';
@@ -268,6 +322,50 @@ TechiesOperatorOr.prototype.evaluate = function()
 {
     return (this.operandLeft.evaluate() || this.operandRight.evaluate());
 };
+
+/*
+ *  TechiesOperatorXor object
+ */
+
+function TechiesOperatorXor(settings)
+{
+    TechiesOperatorOr.call(this, settings);
+
+    this.name = 'operator_binary_xor';
+    this.symbol = '^';
+}
+
+
+TechiesOperatorXor.prototype = Object.create(TechiesOperatorOr.prototype);
+TechiesOperatorXor.prototype.constructor = TechiesOperatorXor;
+
+TechiesOperatorXor.prototype.evaluate = function()
+{
+    return (this.operandLeft.evaluate() != this.operandRight.evaluate());
+}
+
+/*
+ *  TechiesError object
+ */
+
+function TechiesError(message)
+{
+    __tchs__log(message, this.type);
+    this.type = 'ERROR'; 
+}
+
+/*
+ *  TechiesErrorFatal object
+ */
+
+function TechiesErrorFatal(message)
+{
+    this.type = 'FATAL';
+    TechiesError.call(this, message);
+}
+
+TechiesErrorFatal.prototype = Object.create(TechiesError.prototype);
+TechiesErrorFatal.prototype.constructor = TechiesErrorFatal;
 
 /*
  * Techies misc helper functions
@@ -288,4 +386,46 @@ function __tchs__objToArray(obj)
     return [].map.call(obj, function(element) {
         return element;
     })
+}
+
+// Parse given expression and return one or more TechiesObject objects to handle the expression
+function __tchs__parseExpression(expression /* String */, element /* TechiesElement */) // Array of TechiesObject
+{
+    var andSplit = __tchs__splitFirst(expression, '&');
+    if (andSplit.length == 2)
+    {
+        if (andSplit[0] === "" || andSplit[1] === "")
+        {
+            throw new TechiesErrorFatal("AND Operator parse attempt failed due to an operator being blank.");
+        }
+        return new TechiesOperatorAnd({'operandLeft': andSplit[0], 'operandRight': andSplit[1], 'element': element});
+    }
+
+    var xorSplit = __tchs__splitFirst(expression, '^');
+    if (xorSplit.length == 2)
+    {
+        if (xorSplit[0] === "" || xorSplit[1] === "")
+        {
+            throw new TechiesErrorFatal("XOR Operator parse attempt failed due to an operator being blank.");
+        }
+        return new TechiesOperatorXor({'operandLeft': xorSplit[0], 'operandRight': xorSplit[1], 'element': element});
+    }
+
+    if (expression == "num")
+    {
+        return new TechiesRuleNumeric({'element': element});
+    }
+
+    throw new TechiesErrorFatal("No matching Techies expression found for supplied string '" + expression + "'.");
+}
+
+// Split a string only on the first instance of a matched delimeter
+function __tchs__splitFirst(value /* String */, delimeter /* char */) // Array of String
+{
+    var firstSplit = value.split(delimeter);
+
+    if (firstSplit.length == 1)
+        return [];
+
+    return [firstSplit[0], firstSplit.slice(1).join(delimeter)];
 }
