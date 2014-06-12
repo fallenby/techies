@@ -108,11 +108,11 @@ Binary operators
 
 Two operands to the right and left of the operator
 
-####;   -   AND
+####&   -   AND
 
 Both operands must validate successfully
 
-####:   -   OR
+####||   -   OR
 
 Only one operand must validate successfully
 
