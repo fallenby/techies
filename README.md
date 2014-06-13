@@ -53,7 +53,7 @@ Allows all inputs other than anything in the character range 'a' to 'e', or the 
 ####len
 Length validation. This Rule allows input validation according to the length of the element's contained input.
 
-len allows both "greater than" and "less than" validation using the '>' and '<' characters respectively.
+len allows both "greater than" and "less than" validation using the '>', '<', and '=' characters respectively.
 
     <input type="text" tchs="len[>10]"></input>
 
