@@ -54,7 +54,6 @@ function TechiesExpression(settings)
 {
     this.element = settings['element']; // TechiesElement
     this.rule = __tchs__parseExpression(this.element.getExpressionValue(), this.element); // TechiesObject
-    alert(this.rule.evaluate());
 }
 
 /*
@@ -100,13 +99,7 @@ TechiesElement.prototype.getExpressionValue = function()
  *  Represents an HTML <input> element.
  */
 
-function TechiesElementInput(settings)
-{
-    TechiesElement.call(this, settings);
-}
-
-TechiesElementInput.prototype = Object.create(TechiesElement.prototype);
-TechiesElementInput.prototype.constructor = TechiesElementInput;
+var TechiesElementInput = __tchs__createChildObject(TechiesElement);
 
 /*
  *  TechiesElementInputText object
@@ -114,13 +107,7 @@ TechiesElementInput.prototype.constructor = TechiesElementInput;
  *  Represents an HTML <input type="text"> element.
  */
 
-function TechiesElementInputText(settings)
-{
-    TechiesElementInput.call(this, settings);
-}
-
-TechiesElementInputText.prototype = Object.create(TechiesElementInput.prototype);
-TechiesElementInputText.prototype.constructor = TechiesElementInputText;
+var TechiesElementInputText = __tchs__createChildObject(TechiesElementInput);
 
 TechiesElementInput.prototype.getValue = function()
 {
@@ -157,29 +144,17 @@ TechiesObject.prototype.evaluate = function() // bool
  *  TechiesRule object
  */
 
-function TechiesRule(settings)
-{
-    TechiesObject.call(this, settings);
-
-    this.name = 'base_rule';
-}
-
-TechiesRule.prototype = Object.create(TechiesObject.prototype);
-TechiesRule.prototype.constructor = TechiesRule;
+var TechiesRule = __tchs__createChildObject(TechiesObject, function(settings, self) {
+    self.name = 'base_rule';
+});
 
 /*
  *  TechiesRuleNumeric object
  */
 
-function TechiesRuleNumeric(settings)
-{
-    TechiesRule.call(this, settings);
-
-    this.name = 'rule_num';
-}
-
-TechiesRuleNumeric.prototype = Object.create(TechiesRule.prototype);
-TechiesRuleNumeric.prototype.constructor = TechiesRuleNumeric;
+var TechiesRuleNumeric = __tchs__createChildObject(TechiesRule, function(settings, self) {
+    self.name = 'rule_num';
+});
 
 TechiesRuleNumeric.prototype.evaluate = function()
 {
@@ -187,19 +162,63 @@ TechiesRuleNumeric.prototype.evaluate = function()
 }
 
 /*
+ *  TechiesRuleRange object
+ */
+
+var TechiesRuleRange = __tchs__createChildObject(TechiesRule, function(settings, self) {
+    self.name = 'rule_range';
+    self.param = settings['param'].replace('[', '').replace(']', '');
+});
+
+TechiesRuleRange.prototype.evaluate = function()
+{
+    if (this.param.length == 0)
+        throw new TechiesErrorFatal('No expression found when attempting to parse rule \'rng\' in element \'' + this.element.formElement.outerHTML + '\'.');
+
+    var commaSplit = this.param.split(',');
+    if (commaSplit.length > 1)
+    {
+        for (var i = 0; i < commaSplit.length; ++i)
+        {
+            if (commaSplit[i].length == 0)
+                continue;
+
+            var rangeSplit = commaSplit[i].split('..');
+            if (rangeSplit.length == 2 && rangeSplit[0].length != 0 && rangeSplit[1].length != 0)
+            {
+                if ((eval(rangeSplit[0]) < this.element.getValue()) && (this.element.getValue() < eval(rangeSplit[1]))
+                        || eval(rangeSplit[0]) == this.element.getValue()
+                        || eval(rangeSplit[1]) == this.element.getValue())
+                    return true;
+            } else if (eval(commaSplit[i]) == this.element.getValue())
+                return true;
+        }
+        return false;
+    }
+
+    var rangeSplit = this.param.split('..');
+    if (rangeSplit.length == 2 && rangeSplit[0].length != 0 && rangeSplit[1].length != 0)
+    {
+        if ((eval(rangeSplit[0]) < this.element.getValue()) && (this.element.getValue() < eval(rangeSplit[1]))
+                || eval(rangeSplit[0]) == this.element.getValue()
+                || eval(rangeSplit[1]) == this.element.getValue())
+            return true;
+    }
+
+    if (eval(commaSplit[i]) == this.element.getValue())
+        return true;
+
+    return false;
+}
+
+/*
  *  TechiesRuleLength object
  */
 
-function TechiesRuleLength(settings)
-{
-    TechiesRule.call(this, settings);
-
-    this.name = 'rule_length';
-    this.param = settings['param'].replace('[', '').replace(']', '');
-}
-
-TechiesRuleLength.prototype = Object.create(TechiesRule.prototype);
-TechiesRuleLength.prototype.constructor = TechiesRuleLength;
+var TechiesRuleLength = __tchs__createChildObject(TechiesRule, function(settings, self) {
+    self.name = 'rule_length';
+    self.param = settings['param'].replace('[', '').replace(']', '');
+});
 
 TechiesRuleLength.prototype.evaluate = function()
 {
@@ -237,16 +256,10 @@ TechiesRuleLength.prototype.evaluate = function()
  *  TechiesRuleCustom object
  */
 
-function TechiesRuleCustom(settings)
-{
-    TechiesRule.call(this, settings);
-
-    this.name = 'rule_custom';
-    this.param = settings['param'].replace('[', '').replace('[', '');
-}
-
-TechiesRuleCustom.prototype = Object.create(TechiesRule.prototype);
-TechiesRuleCustom.prototype.constructor = TechiesRuleCustom;
+var TechiesRuleCustom = __tchs__createChildObject(TechiesRule, function(settings, self) {
+    self.name = 'rule_custom';
+    self.param = settings['param'].replace('[', '').replace('[', '');
+});
 
 TechiesRuleCustom.prototype.evaluate = function()
 {
@@ -264,35 +277,23 @@ TechiesRuleCustom.prototype.evaluate = function()
  *  TechiesOperator object
  */
 
-function TechiesOperator(settings)
-{
-    TechiesObject.call(this, settings);
-
-    this.name = 'base_operator';
-    this.symbol = '';
-}
-
-TechiesOperator.prototype = Object.create(TechiesObject.prototype);
-TechiesOperator.prototype.constructor = TechiesOperator;
+var TechiesOperator = __tchs__createChildObject(TechiesObject, function(settings, self) {
+    self.name = 'base_operator';
+    self.symbol = null;
+});
 
 /*
  *  TechiesOperatorUnary object
  */
 
-function TechiesOperatorUnary(settings)
-{
-    TechiesOperator.call(this, settings);
-
+var TechiesOperatorUnary = __tchs__createChildObject(TechiesOperator, function(settings, self) {
     if (settings['operand'])
-    {
-        this.setOperand(settings['operand']);
-    }
-
-    this.name = 'base_operator_unary';
+{
+    self.setOperand(settings['operand']);
 }
 
-TechiesOperatorUnary.prototype = Object.create(TechiesOperator.prototype);
-TechiesOperatorUnary.prototype.constructor = TechiesOperatorUnary;
+self.name = 'base_operator_unary';
+});
 
 TechiesOperatorUnary.prototype.setOperand = function(operand /* String */)
 {
@@ -303,16 +304,10 @@ TechiesOperatorUnary.prototype.setOperand = function(operand /* String */)
  *  TechiesOperatorNegate object
  */
 
-function TechiesOperatorNegate(settings)
-{
-    TechiesOperatorUnary.call(this, settings);
-
-    this.name = 'operator_unary_negate';
-    this.symbol = '!';
-}
-
-TechiesOperatorNegate.prototype = Object.create(TechiesOperatorUnary.prototype);
-TechiesOperatorNegate.prototype.constructor = TechiesOperatorNegate;
+var TechiesOperatorNegate = __tchs__createChildObject(TechiesOperatorUnary, function(settings, self) {
+    self.name = 'operator_unary_negate';
+    self.symbol = '!';
+});
 
 TechiesOperatorNegate.prototype.evaluate = function()
 {
@@ -323,21 +318,15 @@ TechiesOperatorNegate.prototype.evaluate = function()
  *  TechiesOperatorBinary object
  */
 
-function TechiesOperatorBinary(settings)
-{
-    TechiesOperator.call(this, settings);
-
+var TechiesOperatorBinary = __tchs__createChildObject(TechiesOperator, function(settings, self) {
     if (settings['operandLeft'] && settings['operandRight'])
-    {
-        this.setOperandLeft(settings['operandLeft']);
-        this.setOperandRight(settings['operandRight']);
-    }
-
-    this.name = 'base_operator_binary';
+{
+    self.setOperandLeft(settings['operandLeft']);
+    self.setOperandRight(settings['operandRight']);
 }
 
-TechiesOperatorBinary.prototype = Object.create(TechiesOperator.prototype);
-TechiesOperatorBinary.prototype.constructor = TechiesOperatorBinary;
+self.name = 'base_operator_binary';
+});
 
 TechiesOperatorBinary.prototype.setOperandLeft = function(operand /* String */)
 {
@@ -353,16 +342,10 @@ TechiesOperatorBinary.prototype.setOperandRight = function(operand /* String */)
  *  TechiesOperatorAnd object
  */
 
-function TechiesOperatorAnd(settings)
-{
-    TechiesOperatorBinary.call(this, settings);
-
+var TechiesOperatorAnd = __tchs__createChildObject(TechiesOperatorBinary, function(settings, self) {
     this.name = 'operator_binary_and';
     this.symbol = ';';
-}
-
-TechiesOperatorAnd.prototype = Object.create(TechiesOperatorBinary.prototype);
-TechiesOperatorAnd.prototype.constructor = TechiesOperatorAnd;
+});
 
 TechiesOperatorAnd.prototype.evaluate = function()
 {
@@ -373,16 +356,10 @@ TechiesOperatorAnd.prototype.evaluate = function()
  *  TechiesOperatorOr object
  */
 
-function TechiesOperatorOr(settings)
-{
-    TechiesOperatorBinary.call(this, settings);
-
+var TechiesOperatorOr = __tchs__createChildObject(TechiesOperatorBinary, function(settings, self) {
     this.name = 'operator_binary_or';
     this.symbol = ':';
-}
-
-TechiesOperatorOr.prototype = Object.create(TechiesOperatorBinary.prototype);
-TechiesOperatorOr.prototype.constructor = TechiesOperatorOr;
+});
 
 TechiesOperatorOr.prototype.evaluate = function()
 {
@@ -393,17 +370,10 @@ TechiesOperatorOr.prototype.evaluate = function()
  *  TechiesOperatorXor object
  */
 
-function TechiesOperatorXor(settings)
-{
-    TechiesOperatorOr.call(this, settings);
-
+var TechiesOperatorXor = __tchs__createChildObject(TechiesOperatorOr, function(settings, self) {
     this.name = 'operator_binary_xor';
     this.symbol = '^';
-}
-
-
-TechiesOperatorXor.prototype = Object.create(TechiesOperatorOr.prototype);
-TechiesOperatorXor.prototype.constructor = TechiesOperatorXor;
+});
 
 TechiesOperatorXor.prototype.evaluate = function()
 {
@@ -424,14 +394,9 @@ function TechiesError(message)
  *  TechiesErrorFatal object
  */
 
-function TechiesErrorFatal(message)
-{
-    this.type = 'FATAL';
-    TechiesError.call(this, message);
-}
-
-TechiesErrorFatal.prototype = Object.create(TechiesError.prototype);
-TechiesErrorFatal.prototype.constructor = TechiesErrorFatal;
+var TechiesErrorFatal = __tchs__createChildObject(TechiesError, null, function(message, self) {
+    self.type = 'FATAL';
+});
 
 /*
  * Techies misc helper functions
@@ -502,6 +467,9 @@ function __tchs__parseExpression(expression /* String */, element /* TechiesElem
     if (expression.substr(0, 3) == 'cst')
         return new TechiesRuleCustom({'element': element, 'param': expression.substr(expression.indexOf('[')+1, expression.indexOf(']') - expression.indexOf('[') - 1)});
 
+    if (expression.substr(0, 3) == 'rng')
+        return new TechiesRuleRange({'element': element, 'param': expression.substr(expression.indexOf('[')+1, expression.indexOf(']') - expression.indexOf('[') - 1)});
+
     throw new TechiesErrorFatal("No matching Techies expression found for supplied string '" + expression + "'.");
 }
 
@@ -525,4 +493,22 @@ function __tchs__isNumeric(value)
             return false;
     }
     return true;
+}
+
+// Creates a child object from a parent object
+function __tchs__createChildObject(parent, postInitFunction, preInitFunction)
+{
+    var child = function(settings)
+    {
+        if (preInitFunction) preInitFunction(settings, this);
+
+        parent.call(this, settings);
+
+        if (postInitFunction) postInitFunction(settings, this);
+    };
+
+    child.prototype = Object.create(parent.prototype);
+    child.prototype.constructor = child;
+
+    return child;
 }
