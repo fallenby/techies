@@ -175,40 +175,39 @@ TechiesRuleRange.prototype.evaluate = function()
     if (this.param.length == 0)
         throw new TechiesErrorFatal('No expression found when attempting to parse rule \'rng\' in element \'' + this.element.formElement.outerHTML + '\'.');
 
+    var value = this.element.getValue();
     var commaSplit = this.param.split(',');
-    if (commaSplit.length > 1)
+    var retVal = [];
+    var rangeSplit;
+
+    for (var i = 0; i < value.length; ++i)
     {
-        for (var i = 0; i < commaSplit.length; ++i)
+        retVal[i] = false;
+        for (var j = 0; j < commaSplit.length; ++j)
         {
-            if (commaSplit[i].length == 0)
+            if (commaSplit[j].length == 0)
                 continue;
 
-            var rangeSplit = commaSplit[i].split('..');
+            rangeSplit = commaSplit[j].split('..');
+
             if (rangeSplit.length == 2 && rangeSplit[0].length != 0 && rangeSplit[1].length != 0)
             {
-                if ((eval(rangeSplit[0]) < this.element.getValue()) && (this.element.getValue() < eval(rangeSplit[1]))
-                        || eval(rangeSplit[0]) == this.element.getValue()
-                        || eval(rangeSplit[1]) == this.element.getValue())
-                    return true;
-            } else if (eval(commaSplit[i]) == this.element.getValue())
-                return true;
+                if (((eval(rangeSplit[0]) < value[i]) && (value[i] < eval(rangeSplit[1])))
+                        || (eval(rangeSplit[0]) == value[i])
+                        || (eval(rangeSplit[1]) == value[i]))
+                {
+                    retVal[i] = true;
+                    continue;
+                }
+            } else if ((eval(commaSplit[j]) == value[i]))
+            {
+                retVal[i] = true;
+                continue;
+            }
         }
-        return false;
-    }
+    } 
 
-    var rangeSplit = this.param.split('..');
-    if (rangeSplit.length == 2 && rangeSplit[0].length != 0 && rangeSplit[1].length != 0)
-    {
-        if ((eval(rangeSplit[0]) < this.element.getValue()) && (this.element.getValue() < eval(rangeSplit[1]))
-                || eval(rangeSplit[0]) == this.element.getValue()
-                || eval(rangeSplit[1]) == this.element.getValue())
-            return true;
-    }
-
-    if (eval(commaSplit[i]) == this.element.getValue())
-        return true;
-
-    return false;
+    return retVal.indexOf(false) == -1;
 }
 
 /*
