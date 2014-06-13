@@ -175,7 +175,7 @@ function TechiesRuleNumeric(settings)
 {
     TechiesRule.call(this, settings);
 
-    this.name = 'num';
+    this.name = 'rule_num';
 }
 
 TechiesRuleNumeric.prototype = Object.create(TechiesRule.prototype);
@@ -183,13 +183,81 @@ TechiesRuleNumeric.prototype.constructor = TechiesRuleNumeric;
 
 TechiesRuleNumeric.prototype.evaluate = function()
 {
-    var value = this.element.getValue();
-    for (var i = 0; i < value.length; ++i)
+    return __tchs__isNumeric(this.element.getValue());
+}
+
+/*
+ *  TechiesRuleLength object
+ */
+
+function TechiesRuleLength(settings)
+{
+    TechiesRule.call(this, settings);
+
+    this.name = 'rule_length';
+    this.param = settings['param'].replace('[', '').replace(']', '');
+}
+
+TechiesRuleLength.prototype = Object.create(TechiesRule.prototype);
+TechiesRuleLength.prototype.constructor = TechiesRuleLength;
+
+TechiesRuleLength.prototype.evaluate = function()
+{
+    if (this.param[0] == '>')
     {
-        if (isNaN(parseInt(value.charAt(i))))
-            return false;
+        var value = this.param.replace('>', '');
+        if (!__tchs__isNumeric(value))
+            throw new TechiesErrorFatal('Value of \'len\' rule invalid for \'>\' when attempting to parse element \'' + this.element.formElement.outerHTML + '\'.');
+
+        return this.element.getValue().length > parseInt(value);
     }
-    return true;
+
+    if (this.param[0] == '<')
+    {
+        var value = this.param.replace('<', '');
+        if (!__tchs__isNumeric(value))
+            throw new TechiesErrorFatal('Value of \'len\' rule invalid for \'<\' when attempting to parse element \'' + this.element.formElement.outerHTML + '\'.');
+
+        return this.element.getValue().length < parseInt(value);
+    }
+
+    if (this.param[0] == '=')
+    {
+        var value = this.param.replace('=', '');
+        if (!__tchs__isNumeric(value))
+            throw new TechiesErrorFatal('Value of \'len\' rule invalid for \'=\' when attempting to parse element \'' + this.element.formElement.outerHTML + '\'.');
+
+        return this.element.getValue().length == parseInt(value);
+    }
+
+    throw new TechiesErrorFatal('No specifier found when attempting to parse rule \'len\' in element \'' + this.element.formElement.outerHTML + '\'.');
+}
+
+/*
+ *  TechiesRuleCustom object
+ */
+
+function TechiesRuleCustom(settings)
+{
+    TechiesRule.call(this, settings);
+
+    this.name = 'rule_custom';
+    this.param = settings['param'].replace('[', '').replace('[', '');
+}
+
+TechiesRuleCustom.prototype = Object.create(TechiesRule.prototype);
+TechiesRuleCustom.prototype.constructor = TechiesRuleCustom;
+
+TechiesRuleCustom.prototype.evaluate = function()
+{
+    if (this.param.length == 0)
+        throw new TechiesErrorFatal('Rule value empty for rule \'cst\' on element \'' + this.element.formElement.outerHTML + '\'.');
+
+    var func = window[this.param];
+    if (!typeof func == 'function')
+        throw new TechiesErrorFatal('Rule value is not an existing function for rule \'cst\' on element \'' + this.element.formElement.outerHTML + '\'.');
+
+    return func({'element': this.element});
 }
 
 /*
@@ -221,8 +289,6 @@ function TechiesOperatorUnary(settings)
     }
 
     this.name = 'base_operator_unary';
-
-    this.operand = null; // TechiesObject
 }
 
 TechiesOperatorUnary.prototype = Object.create(TechiesOperator.prototype);
@@ -395,26 +461,46 @@ function __tchs__parseExpression(expression /* String */, element /* TechiesElem
     if (andSplit.length == 2)
     {
         if (andSplit[0] === "" || andSplit[1] === "")
-        {
             throw new TechiesErrorFatal("AND Operator parse attempt failed due to an operator being blank.");
-        }
+
         return new TechiesOperatorAnd({'operandLeft': andSplit[0], 'operandRight': andSplit[1], 'element': element});
+    }
+
+    var orSplit = __tchs__splitFirst(expression, '||');
+    if (orSplit.length == 2)
+    {
+        if (orSplit[0] === "" || orSplit[1] === "")
+            throw new TechiesErrorFatal("OR Operator parse attempt failed due to an operator being blank.");
+
+        return new TechiesOperatorOr({'operandLeft': orSplit[0], 'operandRight': orSplit[1], 'element': element});
     }
 
     var xorSplit = __tchs__splitFirst(expression, '^');
     if (xorSplit.length == 2)
     {
         if (xorSplit[0] === "" || xorSplit[1] === "")
-        {
             throw new TechiesErrorFatal("XOR Operator parse attempt failed due to an operator being blank.");
-        }
+
         return new TechiesOperatorXor({'operandLeft': xorSplit[0], 'operandRight': xorSplit[1], 'element': element});
     }
 
-    if (expression == "num")
+    var negateSplit = __tchs__splitFirst(expression, '!');
+    if (negateSplit.length == 2)
     {
-        return new TechiesRuleNumeric({'element': element});
+        if (negateSplit[1] === "")
+            throw new TechiesErrorFatal("NEGATE Operator parse attempt failed due to an operator being blank.");
+
+        return new TechiesOperatorNegate({'operand': negateSplit[1], 'element': element});
     }
+
+    if (expression == "num")
+        return new TechiesRuleNumeric({'element': element});
+
+    if (expression.substr(0, 3) == 'len')
+        return new TechiesRuleLength({'element': element, 'param': expression.substr(expression.indexOf('[')+1, expression.indexOf(']') - expression.indexOf('[') - 1)});
+
+    if (expression.substr(0, 3) == 'cst')
+        return new TechiesRuleCustom({'element': element, 'param': expression.substr(expression.indexOf('[')+1, expression.indexOf(']') - expression.indexOf('[') - 1)});
 
     throw new TechiesErrorFatal("No matching Techies expression found for supplied string '" + expression + "'.");
 }
@@ -428,4 +514,15 @@ function __tchs__splitFirst(value /* String */, delimeter /* char */) // Array o
         return [];
 
     return [firstSplit[0], firstSplit.slice(1).join(delimeter)];
+}
+
+// Return true if 'value' is entirely numeric
+function __tchs__isNumeric(value)
+{
+    for (var i = 0; i < value.length; ++i)
+    {
+        if (isNaN(parseInt(value.charAt(i))))
+            return false;
+    }
+    return true;
 }
