@@ -3,7 +3,7 @@ techies
 =======
 
 ####NOTICE:
-####This library is extremely young and definitely not production-ready. It is still undergoing heavy development.
+####This library is extremely young and definitely not production-ready.
 
 Javascript validation library.
 
